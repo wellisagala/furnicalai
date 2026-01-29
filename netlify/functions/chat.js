@@ -12,7 +12,7 @@ exports.handler = async (event) => {
     const { prompt, images } = JSON.parse(event.body);
     const API_KEY = process.env.GEMINI_API_KEY;
 
-    if (!API_KEY) throw new Error("API Key belum diset di Environment Variables Netlify");
+    if (!API_KEY) throw new Error("API Key tidak ditemukan di Netlify");
 
     const contents = [{
       parts: [
@@ -23,6 +23,7 @@ exports.handler = async (event) => {
       ]
     }];
 
+    // Memanggil API Google Gemini yang asli
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
 
     const response = await fetch(url, {
