@@ -1,36 +1,19 @@
-// Gunakan node-fetch jika menggunakan Node.js versi lama, 
-// tapi untuk versi terbaru di Netlify, fetch sudah tersedia otomatis.
-
 exports.handler = async (event, context) => {
-  // 1. Izinkan akses dari browser (CORS)
   const headers = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
   };
 
-  // Tangani preflight request dari browser
-  if (event.httpMethod === "OPTIONS") {
-    return { statusCode: 200, headers, body: "" };
-  }
-
-  if (event.httpMethod !== "POST") {
-    return { statusCode: 405, headers, body: "Method Not Allowed" };
-  }
+  if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers, body: "" };
 
   try {
     const { prompt, images } = JSON.parse(event.body);
     const API_KEY = process.env.GEMINI_API_KEY;
 
-    if (!API_KEY) {
-      return { 
-        statusCode: 500, 
-        headers, 
-        body: JSON.stringify({ error: "API Key belum diset di Netlify" }) 
-      };
-    }
+    if (!API_KEY) throw new Error("API Key belum diset di Netlify");
 
-    // Susun data untuk dikirim ke Google Gemini
+    // Menyiapkan struktur untuk Gemini AI
     const contents = [{
       parts: [
         { text: prompt },
@@ -40,15 +23,13 @@ exports.handler = async (event, context) => {
       ]
     }];
 
+    // Memanggil Google API (BUKAN memanggil /.netlify/functions/chat lagi)
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
 
-    const response = await fetch('/.netlify/functions/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-        prompt: promptInput.value,
-        images: base64Image ? [base64Image.split(',')[1]] : []
-    })
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contents })
     });
 
     const data = await response.json();
@@ -59,7 +40,6 @@ exports.handler = async (event, context) => {
       body: JSON.stringify(data)
     };
   } catch (err) {
-    console.error("Error detail:", err);
     return {
       statusCode: 500,
       headers,
@@ -67,4 +47,3 @@ exports.handler = async (event, context) => {
     };
   }
 };
-
