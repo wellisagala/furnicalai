@@ -1,8 +1,9 @@
-exports.handler = async (event, context) => {
+exports.handler = async (event) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Content-Type": "application/json"
   };
 
   if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers, body: "" };
@@ -11,9 +12,8 @@ exports.handler = async (event, context) => {
     const { prompt, images } = JSON.parse(event.body);
     const API_KEY = process.env.GEMINI_API_KEY;
 
-    if (!API_KEY) throw new Error("API Key belum diset di Netlify");
+    if (!API_KEY) throw new Error("API Key belum diset di Environment Variables Netlify");
 
-    // Menyiapkan struktur untuk Gemini AI
     const contents = [{
       parts: [
         { text: prompt },
@@ -23,7 +23,6 @@ exports.handler = async (event, context) => {
       ]
     }];
 
-    // Memanggil Google API (BUKAN memanggil /.netlify/functions/chat lagi)
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
 
     const response = await fetch(url, {
@@ -33,17 +32,13 @@ exports.handler = async (event, context) => {
     });
 
     const data = await response.json();
+    return { statusCode: 200, headers, body: JSON.stringify(data) };
 
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify(data)
-    };
   } catch (err) {
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: err.message })
+    return { 
+      statusCode: 500, 
+      headers, 
+      body: JSON.stringify({ error: err.message }) 
     };
   }
 };
