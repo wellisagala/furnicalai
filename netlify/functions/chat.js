@@ -1,4 +1,4 @@
-// Fungsi utama untuk mengirim data ke AI
+// 1. Fungsi Utama Analisis
 async function processAI() {
     const promptInput = document.getElementById('ai-prompt');
     const fileInput = document.getElementById('sketch-upload');
@@ -9,7 +9,6 @@ async function processAI() {
         return;
     }
 
-    // Ubah status tombol
     btn.disabled = true;
     btn.innerHTML = "Sedang Menganalisis...";
 
@@ -19,46 +18,44 @@ async function processAI() {
             base64Image = await toBase64(fileInput.files[0]);
         }
 
-        // Memanggil Netlify Function
         const response = await fetch('/.netlify/functions/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                prompt: `Analisis gambar/deskripsi furniture ini: ${promptInput.value}. 
-                        Berikan output HANYA dalam format JSON array seperti contoh ini: 
-                        [{"nama": "Body Samping", "p": 200, "l": 60, "qty": 2, "material": "18MM"}]`,
+                prompt: `Analisis furniture ini: ${promptInput.value}. Berikan output HANYA dalam format JSON array: [{"nama": "Bagian", "p": 100, "l": 50, "qty": 1, "material": "18MM"}]`,
                 images: base64Image ? [base64Image.split(',')[1]] : []
             })
         });
 
-        // --- BAGIAN YANG TADI ANDA CARI ---
+        if (!response.ok) throw new Error("Server Netlify bermasalah (502/500)");
+
         const result = await response.json();
 
-        // Validasi respon agar tidak error "reading 0"
-        if (result && result.candidates && result.candidates[0]) {
+        // 2. PENYARING ERROR (Solusi Gambar 11 & 12)
+        if (result && result.candidates && result.candidates[0] && result.candidates[0].content) {
             let aiText = result.candidates[0].content.parts[0].text;
             
-            // Bersihkan teks dari karakter ```json atau ```
+            // Bersihkan teks jika AI memberikan format ```json ... ```
             const cleanJson = aiText.replace(/```json|```/g, "").trim();
             const cutListData = JSON.parse(cleanJson);
             
-            // Masukkan data ke tabel (Fungsi updateTable harus ada di bawah)
+            // Panggil fungsi untuk mengisi tabel
             updateTable(cutListData);
             alert("Analisis Berhasil!");
         } else {
-            throw new Error("Respon AI tidak valid");
+            throw new Error("AI tidak memberikan jawaban yang valid.");
         }
 
     } catch (error) {
         console.error("Detail Error:", error);
-        alert("Gagal Analisis AI: " + error.message);
+        alert("GAGAL ANALISIS AI: " + error.message);
     } finally {
         btn.disabled = false;
         btn.innerHTML = "ANALISIS KONSTRUKSI";
     }
 }
 
-// Fungsi pembantu untuk konversi gambar
+// 3. Fungsi Pendukung
 function toBase64(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -68,11 +65,15 @@ function toBase64(file) {
     });
 }
 
-// Fungsi untuk mengisi tabel otomatis
 function updateTable(data) {
-    // Pastikan fungsi ini sesuai dengan cara Anda menambah baris di tabel
-    // Contoh sederhana:
+    // Sesuaikan dengan fungsi tambah baris yang sudah ada di script Anda sebelumnya
+    const tableBody = document.querySelector('#cutting-list-body'); 
+    if(tableBody) tableBody.innerHTML = ''; // Bersihkan tabel lama
+    
     data.forEach(item => {
-        addRow(item.nama, item.p, item.l, item.qty, item.material);
+        // Panggil fungsi addRow Anda di sini
+        if (typeof addRow === "function") {
+            addRow(item.nama, item.p, item.l, item.qty, item.material);
+        }
     });
 }
