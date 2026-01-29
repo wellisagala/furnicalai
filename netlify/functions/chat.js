@@ -42,10 +42,13 @@ exports.handler = async (event, context) => {
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
 
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents })
+    const response = await fetch('/.netlify/functions/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        prompt: promptInput.value,
+        images: base64Image ? [base64Image.split(',')[1]] : []
+    })
     });
 
     const data = await response.json();
@@ -64,3 +67,4 @@ exports.handler = async (event, context) => {
     };
   }
 };
+
